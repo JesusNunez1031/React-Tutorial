@@ -1,5 +1,7 @@
 import * as React from 'react';
 import './App.css';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import Interval from './components/intervalTutorial/Interval';
 
 // simple variable
 // const title = 'React1'; // <h1>{title}</h1>
@@ -105,7 +107,7 @@ const storiesReducer = (state, action) => {
 };
 
 
-function App() {
+const App = () => {
 
   // call custom hook
   const [searchTerm, setSearchTerm] = useSemiPersistentState('search', 'React');
@@ -158,16 +160,21 @@ function App() {
   );
 
   return (
-    <div>
-      <h1>Mpr-App</h1>
+    <Router>
+      <Routes>
+        <Route path='/interval' element={<Interval/>}/>
+      </Routes>
+    </Router>
+    // <div>
+    //   <h1>Mpr-App</h1>
 
-      <InputWithLabel id='search' value={searchTerm} isFocused onInputChange={handleSearch}><strong>Search: </strong></InputWithLabel>
-      <hr />
+    //   <InputWithLabel id='search' value={searchTerm} isFocused onInputChange={handleSearch}><strong>Search: </strong></InputWithLabel>
+    //   <hr />
 
-      {isError && <p>Something went wrong ...</p>}
+    //   {isError && <p>Something went wrong ...</p>}
 
-      {isLoading ? (<p>Loading...</p>) : (<List list={searchedStories} onRemoveItem={handleRemoveStory} />)}
-    </div>
+    //   {isLoading ? (<p>Loading...</p>) : (<List list={searchedStories} onRemoveItem={handleRemoveStory} />)}
+    // </div>
   );
 };
 
