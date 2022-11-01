@@ -50,7 +50,7 @@ const list = [
       </div>
     );
   });
-} */
+}
 
 const initialStories = [
   {
@@ -78,7 +78,7 @@ const getAsyncStories = () =>
       2000
     )
   );
-  
+*/
 
 // custom hook
 const useSemiPersistentState = (key, initialState) => {
@@ -95,19 +95,40 @@ const useSemiPersistentState = (key, initialState) => {
 
 const storiesReducer = (state, action) => {
   switch (action.type) {
-    case 'SET_STORIES':
-      return action.payload;
+    case 'STORIES_FETCH_INIT':
+      return {
+        ...state,
+        isLoading: true,
+        isError: false,
+      };
+    case 'STORIES_FETCH_SUCCESS':
+      return {
+        ...state,
+        isLoading: false,
+        isError: false,
+        data: action.payload,
+      };
+    case 'STORIES_FETCH_FAILURE':
+      return {
+        ...state,
+        isLoading: false,
+        isError: true,
+      };
     case 'REMOVE_STORY':
-      return state.filter(
-        story => action.payload.objectID !== story.objectID
-      );
+      return {
+        ...state,
+        data: state.data.filter(
+          story => action.payload.objectID !== story.objectID
+        ),
+      };
     default:
       throw new Error();
   }
 };
 
+const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search?query=';
 
-const App = () => {
+const App = () => { // page 118/229
 
   // call custom hook
   const [searchTerm, setSearchTerm] = useSemiPersistentState('search', 'React');
@@ -115,33 +136,31 @@ const App = () => {
   // inital stories states
   const [stories, dispachStories] = React.useReducer(
     storiesReducer,
-    []
+    { data: [], isLoading: false, isError: false }
   );
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [isError, setIsError] = React.useState(false);
 
-  /*
-  const [searchTerm, setSearchTerm] = React.useState(localStorage.getItem('search') || 'React'); // first term is the current state, second term updates the state
-
-  // called any time searchTerm is updated, the first param is a function where the effect occurs
-  React.useEffect(() => { // this is done to ensure we always saving the value typed
-    localStorage.setItem('search', searchTerm);
+  const handleFetchStories = React.useCallback(() => {
+    if(!searchTerm) {
+      return '';
+    }
+  
+    dispachStories({ type: 'STORIES_FETCH_INIT' });
+  
+    //getAsyncStories() // manual fetch of data using promise function
+    fetch(`${API_ENDPOINT}${searchTerm}`)
+    .then(response => response.json())
+    .then(result => {
+      dispachStories({
+        type: 'STORIES_FETCH_SUCCESS',
+        payload: result.hits,
+      });
+    }).catch(() => dispachStories({ type: 'STORIES_FETCH_FAILURE' }));
   }, [searchTerm]);
-  */
 
   // load data for stories
   React.useEffect(() => {
-    setIsLoading(true);
-
-    getAsyncStories()
-    .then(result => {
-      dispachStories({
-        type: 'SET_STORIES',
-        payload: result.data.stories,
-      });
-      setIsLoading(false);
-    }).catch(() => setIsError(true));
-  }, []);
+    handleFetchStories();
+  }, [handleFetchStories]);
 
   const handleRemoveStory = item => {
     dispachStories({
@@ -155,26 +174,22 @@ const App = () => {
     localStorage.setItem('search', event.target.value);
   };
 
-  const searchedStories = stories.filter(story =>
-    story.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return (
-    <Router>
-      <Routes>
-        <Route path='/interval' element={<Interval/>}/>
-      </Routes>
-    </Router>
-    // <div>
-    //   <h1>Mpr-App</h1>
+    // <Router>
+    //   <Routes>
+    //     <Route path='/interval' element={<Interval/>}/>
+    //   </Routes>
+    // </Router>
+    <div>
+      <h1>Mpr-App</h1>
 
-    //   <InputWithLabel id='search' value={searchTerm} isFocused onInputChange={handleSearch}><strong>Search: </strong></InputWithLabel>
-    //   <hr />
+      <InputWithLabel id='search' value={searchTerm} isFocused onInputChange={handleSearch}><strong>Search: </strong></InputWithLabel>
+      <hr />
 
-    //   {isError && <p>Something went wrong ...</p>}
+      {stories.isError && <p>Something went wrong ...</p>}
 
-    //   {isLoading ? (<p>Loading...</p>) : (<List list={searchedStories} onRemoveItem={handleRemoveStory} />)}
-    // </div>
+      {stories.isLoading ? (<p>Loading...</p>) : (<List list={stories.data} onRemoveItem={handleRemoveStory} />)}
+    </div>
   );
 };
 
